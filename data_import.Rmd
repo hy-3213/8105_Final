@@ -12,31 +12,31 @@ library(rvest)
 library(dplyr)
 library(stringr)
 library(purrr)
+
+# Do not eval anything, when the file is knit
+knitr::opts_chunk$set(eval = FALSE)
 ```
 
-Import diabetes data.
-```{r eval = FALSE}
+## Import diabetes data
+
+```{r import_data}
 data_xpt = read_xpt("data/raw_data/LLCP2023.XPT")
 
-diabetes_df =
-  data_xpt |> 
+variables = c("_STATE", "ADDEPEV3", "ASTHMA3", "ASTHNOW", "BPHIGH6", "CADULT1", "CELSXBRT", "CHCCOPD3", "CHCKDNY2", "CHKHEMO3", "COVIDPO1", "CVDCRHD4", "CVDINFR4", "CVDSTRK3", "DIABAGE4", "DIABEDU1", "DIABETE4", "DIABTYPE", "DIFFWALK", "EDUCA", "EXERANY2", "EXEROFT1", "FLUSHOT7", "HAVARTH4", "HEIGHT3", "INSULIN1", "LADULT1", "LNDSXBRT", "PDIABTS1", "PREDIAB2", "PREGNANT", "SMOKE100", "TOLDHI3", "WEIGHT2")
+
+diabetes_df = data_xpt |> 
+  select(!!variables) |> 
   janitor::clean_names()
-
-diabetes_df |> colnames()
-
-#diabetes_df |> 
-  select(imonth, iday, iyear)
-  
-diabetes_df |> 
-  select(idate, contains("diab")) |> 
-  colnames()
-
-
 ```
 
+```{r export_data}
+write_csv(diabetes_df, "data/diabetes_data.csv")
+```
 
-Import metadata. _Note: The output .csv file has a bunch of random instances of the Â character. Ignore these or remove manually._
-```{r import_metadata, eval = FALSE}
+## Import metadata
+
+_Note: The output .csv file has a bunch of random instances of the Â character. Ignore these or remove manually._
+```{r import_metadata}
 # Read in HTML
 codebook_html = read_html("data/raw_data/USCODE23_LLCP_091024.HTML")
 
@@ -96,21 +96,22 @@ for (i in 1:349){
 # Clean metadata df
 metadata_df = metadata_df |> 
   slice(-1) |> 
-  select(row_id, sas_variable_name, label, question, section_name, type_of_variable)
+  select(row_id, sas_variable_name, label, question, section_name, type_of_variable) |> 
+  filter(sas_variable_name %in% variables) |> 
+  arrange(sas_variable_name)
+```
 
+```{r export_metadata}
 # Save metadata df to csv
 write_csv(metadata_df, "data/metadata.csv")
 ```
 
+To look up metadata of some variable, can use this block. Just change the var_name variable.
+```{r var_metadata_search}
+var_name = "diab"
 
-
-
-```{r}
-
-"data/LLCP2023.ASC"
-"data/LLCP2023.XPT"
-
+metadata_df |> 
+  filter(str_detect(sas_variable_name, str_to_upper(var_name))) |> 
+  view()
 
 ```
-
-
